@@ -41,6 +41,29 @@ create table if not exists pelicula (
     sinopsis text not null
 );
 
+alter table socio
+add constraint pk_socio primary key (id),
+add constraint fk_socio_direccion foreign key (id_direccion) references direccion(id);
+
+alter table direccion
+add constraint pk_direccion primary key (id);
+
+alter table prestamos
+add constraint pk_prestamos primary key (id),
+add constraint fk_prestamos_socio foreign key (id_socio) references socio(id),
+add constraint fk_prestamos_copia foreign key (id_copia) references copia(id);
+
+alter table copia
+add constraint pk_copia primary key (id),
+add constraint fk_copia_pelicula foreign key (id_pelicula) references pelicula(id);
+
+alter table pelicula
+add constraint pk_pelicula primary key (id),
+add constraint fk_pelicula_director foreign key (director) references socio(id);
+
+
+
+
 
 
 
