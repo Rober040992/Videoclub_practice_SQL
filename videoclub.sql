@@ -16,9 +16,9 @@ create table if not exists socio (
 create table if not exists direccion (
     id serial primary key,
     calle varchar(50) not null,
-    numero smallint,
+    numero integer,
     piso varchar(10),
-    codigo_postal smallint not null
+    codigo_postal integer not null
 );
 
 create table if not exists prestamos (
@@ -58,9 +58,6 @@ alter table copia
 add constraint copias_peliculas_fk 
 foreign key (id_pelicula) references pelicula(id);
 
-CREATE UNIQUE INDEX idx_unique_dni ON socio (lower(dni));
-CREATE UNIQUE INDEX idx_unique_direccion ON direccion (lower(calle), codigo_postal);
-
 CREATE TABLE tmp_videoclub (
 	id_copia int4 NULL,
 	fecha_alquiler_texto date NULL,
@@ -84,6 +81,7 @@ CREATE TABLE tmp_videoclub (
 	fecha_alquiler date NULL,
 	fecha_devolucion date NULL
 );
+
 INSERT INTO tmp_videoclub (id_copia,fecha_alquiler_texto,dni,nombre,apellido_1,apellido_2,email,telefono,codigo_postal,fecha_nacimiento,numero,piso,letra,calle,ext,titulo,genero,sinopsis,director,fecha_alquiler,fecha_devolucion) VALUES
 	 (3,'2024-01-28','1124603H','Ivan','Santana','Medina','ivan.santana.medina@gmail.com','694804631','47007','2005-02-15','6','3','D','Francisco Pizarro','3D','El padrino','Drama','Don Vito Corleone, conocido dentro de los círculos del hampa como ''El Padrino'', es el patriarca de una de las cinco familias que ejercen el mando de la Cosa Nostra en Nueva York en los años cuarenta. Don Corleone tiene cuatro hijos: una chica, Connie, y tres varones; Sonny, Michael y Fredo. Cuando el Padrino reclina intervenir en el negocio de estupefacientes, empieza una cruenta lucha de violentos episodios entre las distintas familias del crimen organizado.','Francis Ford Coppola','2024-01-28',NULL),
 	 (4,'2024-01-30','1396452F','Maria carmen','Crespo','Reyes','maria carmen.crespo.reyes@gmail.com','607425989','47005','2000-11-17','58','1','A','Francisco de Goya','1A','El padrino','Drama','Don Vito Corleone, conocido dentro de los círculos del hampa como ''El Padrino'', es el patriarca de una de las cinco familias que ejercen el mando de la Cosa Nostra en Nueva York en los años cuarenta. Don Corleone tiene cuatro hijos: una chica, Connie, y tres varones; Sonny, Michael y Fredo. Cuando el Padrino reclina intervenir en el negocio de estupefacientes, empieza una cruenta lucha de violentos episodios entre las distintas familias del crimen organizado.','Francis Ford Coppola','2024-01-30','2024-01-31'),
@@ -602,3 +600,27 @@ INSERT INTO tmp_videoclub (id_copia,fecha_alquiler_texto,dni,nombre,apellido_1,a
 	 (305,'2024-01-22','5653366N','Maria nieves','Lozano','Leon','maria nieves.lozano.leon@gmail.com','680082585','47003','2002-01-06','21','2','Der.','Hernán Cortés','2Der.','La doncella','Thriller','Corea, década de 1930, durante la colonización japonesa. Una joven llamada Sookee es contratada como doncella de una rica mujer japonesa, Hideko, que vive recluida en una gran mansión bajo la influencia de un tirano. Sookee guarda un secreto y con la ayuda de un estafador que se hace pasar por un conde japonés, planea algo para Hideko.','Park Chan-wook','2024-01-22',NULL),
 	 (306,'2024-01-07','6810904Y','Hugo','Torres','Ferrer','hugo.torres.ferrer@gmail.com','649016903','47006','1994-06-05','50','1','Der.','Federico García Lorca','1Der.','La doncella','Thriller','Corea, década de 1930, durante la colonización japonesa. Una joven llamada Sookee es contratada como doncella de una rica mujer japonesa, Hideko, que vive recluida en una gran mansión bajo la influencia de un tirano. Sookee guarda un secreto y con la ayuda de un estafador que se hace pasar por un conde japonés, planea algo para Hideko.','Park Chan-wook','2024-01-07','2024-01-08'),
 	 (308,'2024-01-25','1638778M','Angel','Lorenzo','Caballero','angel.lorenzo.caballero@gmail.com','698073069','47008','2011-07-30','82','1','Izq.','Sol','1Izq.','El bazar de las sorpresas','Comedia','Alfred Kralik es el tímido jefe de vendedores de Matuschek y Compañía, una tienda de Budapest. Todas las mañanas, los empleados esperan juntos la llegada de su jefe, Hugo Matuschek. A pesar de su timidez, Alfred responde al anuncio de un periódico y mantiene un romance por carta. Su jefe decide contratar a una tal Klara Novak en contra de la opinión de Alfred. En el trabajo, Alfred discute constantemente con ella, sin sospechar que es su corresponsal secreta.','Ernst Lubitsch','2024-01-25',NULL);
+
+INSERT INTO direccion (calle, numero, piso, codigo_postal)
+SELECT DISTINCT calle, 
+                CAST(numero AS integer), 
+                piso, 
+                CAST(codigo_postal AS integer)
+FROM tmp_videoclub
+WHERE calle IS NOT NULL;
+
+-- Insertar datos en la tabla socio
+INSERT INTO socio (nombre, apellidos, fecha_nacimiento, telefono, numero_carnet, id_direccion, dni)
+SELECT nombre, 
+    apellido_1 || ' ' || apellido_2 AS apellidos, 
+    TO_DATE(fecha_nacimiento, 'YYYY-MM-DD'), 
+    telefono, 
+    ROW_NUMBER() OVER (ORDER BY dni) AS numero_carnet,
+    (SELECT id FROM direccion WHERE lower(calle) = lower(tmp.calle) AND codigo_postal = CAST(tmp.codigo_postal AS integer) LIMIT 1) AS id_direccion,
+    dni
+FROM tmp_videoclub AS tmp
+WHERE dni IS NOT NULL;
+
+
+-- esto es todo lo que he conseguido hacer , con muchisima ayuda de gpt ,compañeros y horas de dedicacion. parece que insuficientes
+-- creo que este modulo necesita mas horas para gente como yo que nunca ha visto sql. me ha parecido una locura 
