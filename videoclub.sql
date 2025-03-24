@@ -1,62 +1,119 @@
-create schema if not exists roberpractica;
+create schema if not exists  mrivas_entrega;
 
-set schema 'roberpractica';
+set schema 'mrivas_entrega';
 
-create table if not exists socio (
-    id serial primary key,
-    nombre varchar(30) not null,
-    apellidos varchar(60) not null,
-    fecha_nacimiento date not null,
-    telefono varchar(9) not null,
-    numero_carnet integer not null,
-    id_direccion smallint NOT null,
-    dni varchar(9) NOT NULL
+drop table if exists alquiler cascade;
+
+drop table if exists copias_pelicula cascade;
+
+drop table if exists direcciones cascade;
+
+drop table if exists directores cascade;
+
+drop table if exists generos cascade;
+
+drop table if exists peliculas cascade;
+
+drop table if exists socios cascade;
+
+drop table if exists tmp_videoclub cascade;
+
+--- CREACION DE TABLAS -------------------------------
+CREATE TABLE if not exists socios (
+    socio_id SERIAL PRIMARY KEY,
+    identificacion VARCHAR(20) NOT NULL,
+    nombre VARCHAR(20) NOT NULL,
+    apellidos VARCHAR(40) NULL,
+    fecha_nacimiento DATE NULL,
+    telefono VARCHAR(12) null,
+    direccion_id INT not null,
+    correo VARCHAR(100) null,
+    num_carnet VARCHAR(10)
 );
 
-create table if not exists direccion (
-    id serial primary key,
-    calle varchar(50) not null,
-    numero integer,
-    piso varchar(10),
-    codigo_postal integer not null
+
+CREATE TABLE if not exists direcciones (
+    direccion_id SERIAL PRIMARY KEY,
+    calle VARCHAR(50) NOT NULL,
+    numero VARCHAR(5) NULL,
+    piso VARCHAR(5) null,
+    ext varchar(10) null,
+    codigo_postal VARCHAR(5) NULL
 );
 
-create table if not exists prestamos (
-    id serial primary key,
-    fecha_alquiler date not null,
-    fecha_devolucion date ,
-    id_socio integer not null,
-    id_copia integer not null
+
+CREATE TABLE if not exists generos (
+    genero_id SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL
 );
 
-create table if not exists copia (
-    id serial primary key,
-    id_pelicula integer not null
+CREATE TABLE if not exists directores (
+    director_id SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL
 );
 
-create table if not exists pelicula (
-    id serial primary key,
-    titulo varchar(50) not null,
-    genero varchar(20) not null,
-    director integer not null,
-    sinopsis text not null
+CREATE TABLE if not exists peliculas (
+    pelicula_id SERIAL PRIMARY KEY,
+    titulo VARCHAR(60) NOT NULL,
+    director_id INT NOT NULL,
+    genero_id INT NOT NULL,
+    sinopsis TEXT NOT NULL
 );
 
-alter table socio 
+CREATE TABLE if not exists copias_pelicula (
+    copia_id INT PRIMARY KEY,
+    pelicula_id INT not NULL
+);
+
+CREATE TABLE if not exists alquiler (
+    alquiler_id SERIAL PRIMARY KEY,
+    socio_id INT NOT NULL ,
+    copia_id INT NOT NULL,
+    fecha_alquiler DATE NOT NULL,
+    fecha_devolucion DATE
+);
+
+
+-------------------------GENERANDO CONTRAINTS --------------------------------
+alter table socios
 add constraint direccion_socio_fk 
-foreign key (id_direccion) references direccion(id);
+foreign key (direccion_id) 
+references direcciones(direccion_id);
 
-alter table prestamos 
-add constraint prestamos_socio_fk 
-foreign key (id_socio) references socio(id);
+alter table peliculas
+add constraint director_pelicula_fk 
+foreign key (director_id) references 
+directores(director_id);
 
-alter table prestamos 
-add constraint prestamos_copias_fk 
-foreign key (id_copia) references copia(id);
+alter table peliculas
+add constraint genero_pelicula_fk 
+foreign key (genero_id) references 
+generos(genero_id);
 
-alter table copia
-add constraint copias_peliculas_fk 
-foreign key (id_pelicula) references pelicula(id);
+alter table copias_pelicula 
+add constraint pelicula_copia_fk 
+foreign key (pelicula_id) references 
+peliculas(pelicula_id);
+
+alter table alquiler 
+add constraint copia_alquiler_fk 
+foreign key (copia_id) references 
+copias_pelicula(copia_id);
+
+alter table alquiler 
+add constraint socio_alquiler_fk 
+foreign key (socio_id) references 
+socios(socio_id);
+
+------------ SE CREA UN INDICE PARA NO PERMITIR REGISTROS DUPLICADOS DE SOCIOS---------------------------------
+create unique index index_idenfiticacion_socio on socios(lower(identificacion)); 
+create unique index index_num_carnet_socio on socios(num_carnet);
+
+------------ SE CREA UN INDICE PARA NO PERMITIR REGISTROS DUPLICADOS DE DIRECCIONES ---------------------------------
+ALTER TABLE direcciones
+ADD CONSTRAINT unique_direccion UNIQUE (calle, numero, piso, ext, codigo_postal);
+
+-------------------CREACION DE LOS REGISTROS DE LA TABLA TEMPORAL DEL VIDEOCLUB ------------------------------------------
 
 CREATE TABLE tmp_videoclub (
 	id_copia int4 NULL,
@@ -81,7 +138,6 @@ CREATE TABLE tmp_videoclub (
 	fecha_alquiler date NULL,
 	fecha_devolucion date NULL
 );
-
 INSERT INTO tmp_videoclub (id_copia,fecha_alquiler_texto,dni,nombre,apellido_1,apellido_2,email,telefono,codigo_postal,fecha_nacimiento,numero,piso,letra,calle,ext,titulo,genero,sinopsis,director,fecha_alquiler,fecha_devolucion) VALUES
 	 (3,'2024-01-28','1124603H','Ivan','Santana','Medina','ivan.santana.medina@gmail.com','694804631','47007','2005-02-15','6','3','D','Francisco Pizarro','3D','El padrino','Drama','Don Vito Corleone, conocido dentro de los círculos del hampa como ''El Padrino'', es el patriarca de una de las cinco familias que ejercen el mando de la Cosa Nostra en Nueva York en los años cuarenta. Don Corleone tiene cuatro hijos: una chica, Connie, y tres varones; Sonny, Michael y Fredo. Cuando el Padrino reclina intervenir en el negocio de estupefacientes, empieza una cruenta lucha de violentos episodios entre las distintas familias del crimen organizado.','Francis Ford Coppola','2024-01-28',NULL),
 	 (4,'2024-01-30','1396452F','Maria carmen','Crespo','Reyes','maria carmen.crespo.reyes@gmail.com','607425989','47005','2000-11-17','58','1','A','Francisco de Goya','1A','El padrino','Drama','Don Vito Corleone, conocido dentro de los círculos del hampa como ''El Padrino'', es el patriarca de una de las cinco familias que ejercen el mando de la Cosa Nostra en Nueva York en los años cuarenta. Don Corleone tiene cuatro hijos: una chica, Connie, y tres varones; Sonny, Michael y Fredo. Cuando el Padrino reclina intervenir en el negocio de estupefacientes, empieza una cruenta lucha de violentos episodios entre las distintas familias del crimen organizado.','Francis Ford Coppola','2024-01-30','2024-01-31'),
@@ -601,26 +657,104 @@ INSERT INTO tmp_videoclub (id_copia,fecha_alquiler_texto,dni,nombre,apellido_1,a
 	 (306,'2024-01-07','6810904Y','Hugo','Torres','Ferrer','hugo.torres.ferrer@gmail.com','649016903','47006','1994-06-05','50','1','Der.','Federico García Lorca','1Der.','La doncella','Thriller','Corea, década de 1930, durante la colonización japonesa. Una joven llamada Sookee es contratada como doncella de una rica mujer japonesa, Hideko, que vive recluida en una gran mansión bajo la influencia de un tirano. Sookee guarda un secreto y con la ayuda de un estafador que se hace pasar por un conde japonés, planea algo para Hideko.','Park Chan-wook','2024-01-07','2024-01-08'),
 	 (308,'2024-01-25','1638778M','Angel','Lorenzo','Caballero','angel.lorenzo.caballero@gmail.com','698073069','47008','2011-07-30','82','1','Izq.','Sol','1Izq.','El bazar de las sorpresas','Comedia','Alfred Kralik es el tímido jefe de vendedores de Matuschek y Compañía, una tienda de Budapest. Todas las mañanas, los empleados esperan juntos la llegada de su jefe, Hugo Matuschek. A pesar de su timidez, Alfred responde al anuncio de un periódico y mantiene un romance por carta. Su jefe decide contratar a una tal Klara Novak en contra de la opinión de Alfred. En el trabajo, Alfred discute constantemente con ella, sin sospechar que es su corresponsal secreta.','Ernst Lubitsch','2024-01-25',NULL);
 
-INSERT INTO direccion (calle, numero, piso, codigo_postal)
-SELECT DISTINCT calle, 
-                CAST(numero AS integer), 
-                piso, 
-                CAST(codigo_postal AS integer)
-FROM tmp_videoclub
-WHERE calle IS NOT NULL;
 
--- Insertar datos en la tabla socio
-INSERT INTO socio (nombre, apellidos, fecha_nacimiento, telefono, numero_carnet, id_direccion, dni)
-SELECT nombre, 
-    apellido_1 || ' ' || apellido_2 AS apellidos, 
-    TO_DATE(fecha_nacimiento, 'YYYY-MM-DD'), 
-    telefono, 
-    ROW_NUMBER() OVER (ORDER BY dni) AS numero_carnet,
-    (SELECT id FROM direccion WHERE lower(calle) = lower(tmp.calle) AND codigo_postal = CAST(tmp.codigo_postal AS integer) LIMIT 1) AS id_direccion,
-    dni
-FROM tmp_videoclub AS tmp
-WHERE dni IS NOT NULL;
+	
+------------------ AGREGAR DATOS A TABLAS--------------------------------------------------------
+--------TABLA DIRECTORES
+insert into directores (nombre)
+select distinct director 
+from tmp_videoclub tv;
 
 
--- esto es todo lo que he conseguido hacer , con muchisima ayuda de gpt ,compañeros y horas de dedicacion. parece que insuficientes
--- creo que este modulo necesita mas horas para gente como yo que nunca ha visto sql. me ha parecido una locura 
+--------- TABLA GENEROS
+insert  into generos (nombre)
+select distinct genero 
+from tmp_videoclub tv;
+
+
+
+----------TABLA PELICULAS
+insert into peliculas (titulo, director_id, genero_id, sinopsis )
+select distinct tv.titulo,
+d.director_id,
+g.genero_id,
+tv.sinopsis
+from tmp_videoclub tv
+left join generos g on g.nombre = tv.genero 
+left join directores d on d.nombre =tv.director ;
+
+-------TABLA COPIAS_PELICULAS
+insert into copias_pelicula (copia_id , pelicula_id)
+select distinct tv.id_copia,
+p.pelicula_id
+from tmp_videoclub tv
+left join peliculas p on p.titulo = tv.titulo 
+order by tv.id_copia ;
+
+
+------TABLA DIRECCIONES
+INSERT INTO direcciones (calle, numero, piso, ext, codigo_postal)
+SELECT DISTINCT
+    tv.calle,
+    tv.numero,
+    tv.piso,
+    tv.ext, 
+    tv.codigo_postal
+FROM tmp_videoclub tv
+ON CONFLICT (calle, numero, piso, ext, codigo_postal) DO NOTHING;
+
+
+
+-----TABLA SOCIOS 
+INSERT INTO socios (identificacion, nombre, apellidos, fecha_nacimiento, telefono, direccion_id, correo)
+SELECT DISTINCT
+    tv.dni AS identificacion,
+    tv.nombre,
+    CONCAT(tv.apellido_1, ' ', tv.apellido_2) AS apellidos,
+    cast (tv.fecha_nacimiento as DATE) as fecha_nacimiento, 
+    tv.telefono,
+    d.direccion_id,
+    tv.email AS correo
+FROM tmp_videoclub tv
+JOIN direcciones d ON tv.calle = d.calle
+                 AND tv.numero = d.numero
+                 AND tv.piso = d.piso
+                 AND tv.ext = d.ext
+                 AND tv.codigo_postal = d.codigo_postal
+WHERE d.direccion_id IS NOT NULL;
+
+
+
+------TABLA ALQUILER
+INSERT INTO alquiler (socio_id, copia_id, fecha_alquiler, fecha_devolucion)
+SELECT DISTINCT
+    s.socio_id,
+    cp.copia_id,
+    tv.fecha_alquiler,
+    tv.fecha_devolucion
+FROM tmp_videoclub tv
+JOIN socios s ON tv.dni = s.identificacion  
+JOIN copias_pelicula cp ON tv.id_copia = cp.copia_id 
+order by  cp.copia_id;  
+
+
+-----------------------CONSULTA DE PELICULAS DISPONIBLES-----------------------------
+SELECT 
+    p.pelicula_id, 
+    p.titulo,  
+    COUNT(cp.copia_id) AS copias_disponibles
+FROM 
+    peliculas p
+JOIN 
+    copias_pelicula cp ON p.pelicula_id = cp.pelicula_id
+LEFT JOIN 
+    alquiler a ON cp.copia_id = a.copia_id 
+    AND a.fecha_devolucion IS NULL 
+WHERE 
+    a.copia_id IS NULL 
+GROUP BY 
+    p.pelicula_id, p.titulo
+order by p.pelicula_id;
+
+
+    
